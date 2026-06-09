@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Florida RP - Auth</title>
+    <style>
+        body {
+            margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: transparent; display: flex; justify-content: center; align-items: center; height: 100vh;
+            overflow: hidden; color: white;
+        }
+        .auth-container {
+            background: rgba(20, 20, 20, 0.9); padding: 40px; border-radius: 15px;
+            width: 350px; border: 2px solid #bb7dff; box-shadow: 0 0 20px rgba(187, 125, 255, 0.3);
+            text-align: center;
+        }
+        h1 { color: #bb7dff; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
+        p { color: #ccc; font-size: 14px; margin-bottom: 25px; }
+        input, select {
+            width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #444;
+            background: #222; color: white; box-sizing: border-box; outline: none;
+        }
+        input:focus { border-color: #bb7dff; }
+        button {
+            width: 100%; padding: 12px; margin-top: 20px; border: none; border-radius: 5px;
+            background: #bb7dff; color: white; font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+        button:hover { background: #a559ff; transform: scale(1.02); }
+        .error { color: #ff6347; font-size: 12px; margin-top: 10px; display: none; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="auth-container">
+    <h1 id="title">Florida RP</h1>
+    <p id="desc">????? ??????????, <span id="player-name">?????</span></p>
+
+    <!-- ????? ????? -->
+    <div id="login-form">
+        <input type="password" id="login-pass" placeholder="??????? ??? ??????">
+        <button onclick="submitLogin()">?????</button>
+    </div>
+
+    <!-- ????? ??????????? -->
+    <div id="reg-form" class="hidden">
+        <input type="password" id="reg-pass" placeholder="?????????? ??????">
+        <input type="text" id="reg-email" placeholder="??????????? ?????">
+        <input type="number" id="reg-age" placeholder="??? ??????? (18-60)" min="18" max="60">
+        <select id="reg-gender">
+            <option value="1">???????</option>
+            <option value="2">???????</option>
+        </select>
+        <button onclick="submitRegister()">??????????????????</button>
+    </div>
+
+    <div id="error-msg" class="error">?????? ???????????!</div>
+</div>
+
+<script>
+    let isNewPlayer = false;
+
+    // ?????????????? ? ????????
+    if (typeof cef !== 'undefined') {
+        cef.on("server:initAuth", (hasAccount, name) => {
+            document.getElementById('player-name').innerText = name;
+            if (hasAccount === 1) {
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('reg-form').classList.add('hidden');
+                document.getElementById('desc').innerText = "??????? ?????? ??? ????? ? ???????";
+            } else {
+                isNewPlayer = true;
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('reg-form').classList.remove('hidden');
+                document.getElementById('desc').innerText = "??????????, ???????? ???????????";
+            }
+        });
+
+        cef.on("server:authError", (attempts) => {
+            const err = document.getElementById('error-msg');
+            err.innerText = `???????? ??????! ???????? ???????: ${attempts}`;
+            err.style.display = 'block';
+        });
+
+        // ?????????? ?????? ? ?????????? ??????????
+        cef.emit("client:ready");
+    }
+
+    function submitLogin() {
+        const pass = document.getElementById('login-pass').value;
+        if (pass.length < 8) return alert("?????? ??????? ???????? (???. 8 ????????)!");
+        cef.emit("client:onLogin", pass);
+    }
+
+    function submitRegister() {
+        const pass = document.getElementById('reg-pass').value;
+        const email = document.getElementById('reg-email').value;
+        const age = parseInt(document.getElementById('reg-age').value);
+        const gender = parseInt(document.getElementById('reg-gender').value);
+
+        if (pass.length < 8) return alert("?????? ?????? ???? ?? 8 ????????!");
+        if (!email.includes('@')) return alert("??????? ?????????? E-mail ?????!");
+        if (isNaN(age) || age < 18 || age > 60) return alert("??????? ??????? ?? 18 ?? 60 ???!");
+
+        cef.emit("client:onRegister", pass, email, age, gender);
+    }
+</script>
+
+</body>
+</html>
